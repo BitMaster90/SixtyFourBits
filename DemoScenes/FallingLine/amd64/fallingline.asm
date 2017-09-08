@@ -176,19 +176,19 @@ NESTED_ENTRY Fallingline_Demo, _TEXT$00
   
   @StartBoundCheck:
   ;check left
-  CMP r11, 0180h
+  CMP r11, 01E7h
   JBE @ChangeLeft
   
   ;check right 
-  CMP r11, 0280h
+  CMP r11, 0219h
   JAE @ChangeRight
   
   ;check top
-  CMP r12, 0200h
+  CMP r12, 0248h
   JAE @ChangeTop
   
   ;check Bottom
-  CMP r12, 0100h
+  CMP r12, 0B8h
   JBE @ChangeBottom
   
   MOV RDI, MASTER_DEMO_STRUCT.VideoBuffer[RSI]

@@ -154,18 +154,9 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   JE @PlotRandom
   XOR r10, r10
   XOR r13, r13
-  
-  CALL rand
-  MOV r10,0FFh
-  DIV r10
-  ADD RDX, 0180h
-  MOV [X_offset],RDX
-  
-  CALL rand
-  MOV r13,0FFh
-  DIV r13
-  ADD RDX, 0100h
-  MOV [Y_offset],RDX
+
+  MOV [X_offset],0200h;RDX
+  MOV [Y_offset], 0120h;,RDX
   
 
   MOV RAX, MASTER_DEMO_STRUCT.ScreenHeight[RSI]
@@ -189,27 +180,161 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   
   
   @PlotRandom: 
- 
+  
+  MOV rcx, 01E7h
+  MOV rdx, 0219h
+  MOV r8, 0248h
+  MOV r9, 0B8h
+  CALL Brownian_FindNextPixel
+  
+  
+  MOV RCX, RSI
+  MOV RDX, [X_offset]
+  MOV r8, [Y_offset]
+  CALL Brownian_DisplayPixel
+
+  
+  
+ @Terminate:
+  MOV RAX, 01h  
+  MOV rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi[RSP]
+  MOV rsi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRsi[RSP]
+  MOV rbx, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRbx[RSP]
+
+  MOV r10, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR10[RSP]
+  MOV r11, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR11[RSP]
+  MOV r12, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR12[RSP]
+  MOV r13, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR13[RSP]
+
+  ADD RSP, SIZE BROWNIAN_FUNCTION_STRUCT
+  RET
+  
+NESTED_END Brownian_Demo, _TEXT$00
+
+
+
+
+NESTED_ENTRY Brownian_DisplayPixel, _TEXT$00
+ alloc_stack(SIZEOF BROWNIAN_FUNCTION_STRUCT)
+ save_reg rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi
+ save_reg rsi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRsi
+ save_reg rbx, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRbx
+ save_reg r10, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR10
+ save_reg r11, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR11
+ save_reg r12, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR12
+ save_reg r13, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR13
+
+.ENDPROLOG 
+
+  MOV RSI, RCX
+  MOV r11, RDX
+  MOV r12, R8
+  
+  MOV RAX,r12
+  MOV RDX, 0400h
+  MUL RDX
+  ADD RAX, r11
+  MOV r10, PlotBuffer
+  ADD r10,RAX
+  MOV DL,01h
+  MOV [r10], DL
+  
+  MOV RDI, MASTER_DEMO_STRUCT.VideoBuffer[RSI]
+  MOV RCX, RSI
+  MOV RDX, r11
+  MOV r8,  r12
+  CALL Brownian_PlotLocation
+  ADD RDI, RAX
+  MOV EAX, 0FFFFFFh
+  MOV [RDI], EAX
+  
+
+  
+  
+  
+ @Terminate:
+  MOV rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi[RSP]
+  MOV rsi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRsi[RSP]
+  MOV rbx, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRbx[RSP]
+
+  MOV r10, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR10[RSP]
+  MOV r11, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR11[RSP]
+  MOV r12, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR12[RSP]
+  MOV r13, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR13[RSP]
+
+  ADD RSP, SIZE BROWNIAN_FUNCTION_STRUCT
+  RET
+NESTED_END Brownian_DisplayPixel, _TEXT$00
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;*********************************************************
+;  Brownian_FindNextPixel
+;
+;        Parameters: left, right, top and bottom bound values.
+;
+;        Return Value: TRUE / FALSE    
+;
+;
+;*********************************************************  
+
+
+NESTED_ENTRY Brownian_FindNextPixel, _TEXT$00
+ alloc_stack(SIZEOF BROWNIAN_FUNCTION_STRUCT)
+ save_reg rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi
+ save_reg rsi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRsi
+ save_reg rbx, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRbx
+ save_reg r10, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR10
+ save_reg r11, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR11
+ save_reg r12, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR12
+ save_reg r13, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR13
+
+.ENDPROLOG   
+  MOV rdi, rcx
+  MOV rsi, rdx
+  MOV rbx, r8
+  MOV r13, r9
+  
+   
   XOR r10, r10
-  XOR r13, r13
+  XOR rcx, rcx
+  
+  MOV r11, rsi
+  SUB r11, rdi
+  MOV r12, rbx
+  SUB r12, r13
   
   CALL rand
-  MOV r10,0200h
+  MOV r10,r11
   DIV r10
-  ADD RDX, 0150h
-  MOV [X_offset],RDX
+  ADD RDX, rdi
+  MOV [X_offset], RDX
   
   CALL rand
-  MOV r13,0150h
-  DIV r13
-  ADD RDX, 0100h
+  MOV rcx,r12
+  DIV rcx
+  ADD RDX, r13
   MOV [Y_offset],RDX
   
   MOV r11, [X_offset]
   MOV r12, [Y_offset]
   
   @PlotRandomInternal:
-  
   CMP [xDirection], 0
   JE @DecrementX
   INC r11
@@ -228,19 +353,19 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   
   @StartBoundCheck:
   ;check left
-  CMP r11, 017Fh
+  CMP r11, rdi
   JBE @ChangeLeft
   
   ;check right 
-  CMP r11, 034Fh
+  CMP r11, rsi
   JAE @ChangeRight
   
   ;check top
-  CMP r12, 024Fh
+  CMP r12, rbx
   JAE @ChangeTop
   
   ;check Bottom
-  CMP r12, 0FFh
+  CMP r12, r13
   JBE @ChangeBottom
   
   MOV RCX, r11
@@ -249,28 +374,10 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   CMP RAX, 0
   JE @PlotRandomInternal
   
-  MOV RAX,r12
-  MOV RDX, 0400h
-  MUL RDX
-  ADD RAX, r11
-  MOV r10, PlotBuffer
-  ADD r10,RAX
-  MOV DL,01h
-  MOV [r10], DL
-  
-  MOV RDI, MASTER_DEMO_STRUCT.VideoBuffer[RSI]
-  MOV RCX, RSI
-  MOV RDX, r11
-  MOV r8,  r12
-  CALL Brownian_PlotLocation
-  ADD RDI, RAX
-  MOV EAX, 0FF0000h
-  MOV [RDI], EAX
-
-  
+  MOV [X_offset], r11
+  MOV [Y_offset], r12
   
  @Terminate:
-  MOV RAX, 01h  
   MOV rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi[RSP]
   MOV rsi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRsi[RSP]
   MOV rbx, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRbx[RSP]
@@ -325,7 +432,10 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   ADD r12, RDX
   JMP @PlotRandomInternal
   
-NESTED_END Brownian_Demo, _TEXT$00
+NESTED_END Brownian_FindNextPixel, _TEXT$00
+
+
+
 
 
 
