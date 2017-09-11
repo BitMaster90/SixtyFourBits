@@ -20,6 +20,8 @@
 include ksamd64.inc
 include demovariables.inc
 include master.inc
+include vpal_public.inc
+
 
 ;*********************************************************
 ; External WIN32/C Functions
@@ -81,6 +83,9 @@ MAX_FRAMES EQU <2000>
    yDirection dd ?
    FirstChance dd ?
    Plot_Counter dq ?
+   VirtualPalleteBrownian dq ?
+   VirtualColorCounter dd ?
+   Temp  dd ?
 
 .CODE
 
@@ -108,6 +113,7 @@ NESTED_ENTRY Brownian_Init, _TEXT$00
   MOV [yDirection], 01h
   MOV [FirstChance], 0h
   MOV [Plot_Counter], 0h
+  MOV [VirtualColorCounter], 0h
   ;
   ; Initialize Random Numbers
   ;
@@ -185,6 +191,34 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   MOV RCX, 0220h
   MOV RDX, 0150h
   CALL Brownian_PlantSeed
+  
+  ;
+  ; Create Virtual Palette for Stars
+  ;   
+  MOV RCX, 256
+  CALL VPal_Create
+  TEST RAX, RAX
+  JZ @Terminate
+
+  MOV [VirtualPalleteBrownian], RAX
+
+  XOR EAX, EAX
+  XOR RDX, RDX
+  MOV EAX, 000100h
+
+@PopulateBrownianPallete:
+  MOV [Temp], EAX
+  MOV R8, RAX
+  MOV R12, RDX
+  MOV RCX, [VirtualPalleteBrownian]
+  CALL VPal_SetColorIndex
+  MOV EAX, [Temp]
+  ADD EAX, 000100h
+
+  MOV RDX, R12
+  INC RDX
+  CMP RDX, 256
+  JB @PopulateBrownianPallete
   
   MOV [Brownian_InitFlag], 1
  
@@ -338,10 +372,15 @@ NESTED_ENTRY Brownian_DisplayPixel, _TEXT$00
   MOV r8,  r12
   CALL Brownian_PlotLocation
   ADD RDI, RAX
-  MOV EAX, 000FF00h
+  
+  MOV RCX, VirtualPalleteBrownian
+  MOV EDX, [VirtualColorCounter]
+  CALL VPal_GetColorIndex
   MOV [RDI], EAX
   
-
+  INC [VirtualColorCounter]
+  CMP [VirtualColorCounter], 255
+  JA @ClearCounter
   
   
   
@@ -357,6 +396,10 @@ NESTED_ENTRY Brownian_DisplayPixel, _TEXT$00
 
   ADD RSP, SIZE BROWNIAN_FUNCTION_STRUCT
   RET
+  
+  @ClearCounter:
+  MOV [VirtualColorCounter], 0
+  JMP @Terminate
 NESTED_END Brownian_DisplayPixel, _TEXT$00
 
 

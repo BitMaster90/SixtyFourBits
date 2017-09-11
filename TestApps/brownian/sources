@@ -26,5 +26,6 @@ TARGETLIBS = $(TARGETLIBS) \
              $(OBJ_PATH)\..\..\Framework\Math\$O\Mathx64.lib \
              $(OBJ_PATH)\..\..\DemoScenes\Brownian\$O\Brownian.lib \
              $(OBJ_PATH)\..\..\Framework\Engine\$O\Enginex64.lib \
+			 $(OBJ_PATH)\..\..\Framework\vpal\$O\vpalx64.lib \
              $(OBJ_PATH)\..\..\Framework\Init\$O\Initx64.lib 
 
