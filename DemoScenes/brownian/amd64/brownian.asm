@@ -80,6 +80,7 @@ MAX_FRAMES EQU <2000>
    xDirection dd ?
    yDirection dd ?
    FirstChance dd ?
+   Plot_Counter dq ?
 
 .CODE
 
@@ -106,6 +107,7 @@ NESTED_ENTRY Brownian_Init, _TEXT$00
   MOV [xDirection], 01h
   MOV [yDirection], 01h
   MOV [FirstChance], 0h
+  MOV [Plot_Counter], 0h
   ;
   ; Initialize Random Numbers
   ;
@@ -167,23 +169,33 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   CALL LocalAlloc
   MOV [PlotBuffer], RAX
   
-  MOV RAX,[Y_offset]
-  MOV RDX, 0400h
-  MUL RDX
-  ADD RAX, [X_offset]
-  MOV r10, PlotBuffer
-  ADD r10,RAX
-  MOV AL,1
-  MOV [r10], AL  
+  
+  MOV RCX, [X_offset]
+  MOV RDX, [Y_offset]
+  CALL Brownian_PlantSeed
+  
+  MOV RCX, 0210h
+  MOV RDX, 0B0h
+  CALL Brownian_PlantSeed
+  
+  MOV RCX, 01F0h
+  MOV RDX, 0100h
+  CALL Brownian_PlantSeed
+  
+  MOV RCX, 0220h
+  MOV RDX, 0150h
+  CALL Brownian_PlantSeed
+  
   MOV [Brownian_InitFlag], 1
  
   
   
   @PlotRandom: 
-  
+  CMP [Plot_Counter], 03000h
+  JAE @SecondSquare
   MOV rcx, 01E7h
   MOV rdx, 0219h
-  MOV r8, 0248h
+  MOV r8, 0300h
   MOV r9, 0B8h
   CALL Brownian_FindNextPixel
   
@@ -193,8 +205,48 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   MOV r8, [Y_offset]
   CALL Brownian_DisplayPixel
 
+  CMP [Plot_Counter], 0500h
+  JAE @SecondSquare
+  MOV rcx, 01DDh
+  MOV rdx, 0223h
+  MOV r8, 0C8h
+  MOV r9, 096h
+  CALL Brownian_FindNextPixel
   
+  MOV RCX, RSI
+  MOV RDX, [X_offset]
+  MOV r8, [Y_offset]
+  CALL Brownian_DisplayPixel
   
+  @SecondSquare:
+  CMP [Plot_Counter], 05000h
+  JAE @LastSquare
+  MOV rcx, 01ABh
+  MOV rdx, 0255h
+  MOV r8, 012Ch
+  MOV r9, 0C8h
+  CALL Brownian_FindNextPixel
+  
+  MOV RCX, RSI
+  MOV RDX, [X_offset]
+  MOV r8, [Y_offset]
+  CALL Brownian_DisplayPixel
+  
+  @LastSquare:
+  CMP [Plot_Counter], 0A000h
+  JAE @Terminate
+  MOV rcx, 0160h
+  MOV rdx, 02A0h
+  MOV r8, 01C2h
+  MOV r9, 012Ch
+  CALL Brownian_FindNextPixel
+  
+  MOV RCX, RSI
+  MOV RDX, [X_offset]
+  MOV r8, [Y_offset]
+  CALL Brownian_DisplayPixel
+  
+  INC [Plot_Counter]
  @Terminate:
   MOV RAX, 01h  
   MOV rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi[RSP]
@@ -210,6 +262,47 @@ NESTED_ENTRY Brownian_Demo, _TEXT$00
   RET
   
 NESTED_END Brownian_Demo, _TEXT$00
+
+NESTED_ENTRY Brownian_PlantSeed, _TEXT$00
+ alloc_stack(SIZEOF BROWNIAN_FUNCTION_STRUCT)
+ save_reg rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi
+ save_reg rsi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRsi
+ save_reg rbx, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRbx
+ save_reg r10, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR10
+ save_reg r11, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR11
+ save_reg r12, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR12
+ save_reg r13, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR13
+
+.ENDPROLOG 
+
+  MOV r11, rcx
+  MOV r12, rdx
+  MOV RAX,r12
+  MOV RDX, 0400h
+  MUL RDX
+  ADD RAX, r11
+  MOV r10, PlotBuffer
+  ADD r10,RAX
+  MOV AL,1
+  MOV [r10], AL  
+  
+ @Terminate:
+  MOV rdi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRdi[RSP]
+  MOV rsi, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRsi[RSP]
+  MOV rbx, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveRbx[RSP]
+
+  MOV r10, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR10[RSP]
+  MOV r11, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR11[RSP]
+  MOV r12, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR12[RSP]
+  MOV r13, BROWNIAN_FUNCTION_STRUCT.SaveFrame.SaveR13[RSP]
+
+  ADD RSP, SIZE BROWNIAN_FUNCTION_STRUCT
+  RET
+NESTED_END Brownian_PlantSeed, _TEXT$00
+
+
+
+
 
 
 
@@ -245,7 +338,7 @@ NESTED_ENTRY Brownian_DisplayPixel, _TEXT$00
   MOV r8,  r12
   CALL Brownian_PlotLocation
   ADD RDI, RAX
-  MOV EAX, 0FFFFFFh
+  MOV EAX, 000FF00h
   MOV [RDI], EAX
   
 
